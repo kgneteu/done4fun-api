@@ -3,10 +3,113 @@ package main
 import (
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"os/user"
+	"strconv"
 	"time"
 )
+
+const (
+	accessTokenCookieName = "X-Auth"
+	jwtSecretKey          = "some-secret-key"
+)
+
+
+
+//Auth Middleware
+func checkToken(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		tokenCookie, _ := c.Cookie(accessTokenCookieName)
+		//todo support for auth headers
+		//tokenHeader.
+
+		claims := &jwt.StandardClaims{}
+		if tokenCookie != nil {
+			//token = decodeJWTToken
+			_, err := jwt.ParseWithClaims(tokenCookie.Value, claims,
+				func(token *jwt.Token) (interface{}, error) {
+					return getJWTSigningKey(), nil
+				})
+			if err != nil {
+				return c.JSON(http.StatusForbidden, echo.Map{"message": "invalid token"})
+			}
+
+			c.Set("User", map[string]interface{}{
+				"Id":    claims.Id,
+				"Token": tokenCookie.Value,
+			})
+		}
+		return next(c)
+	}
+}
+
+func getJWTSigningKey() []byte {
+	return []byte(jwtSecretKey)
+}
+
+func createToken(id uint) (signedString string, err error) {
+	//todo: secret for jwt & expiration
+	claims := &jwt.StandardClaims{
+		Id:        strconv.FormatUint(uint64(id), 10),
+		IssuedAt: time.Now().Unix(),
+		NotBefore: time.Now().Unix(),
+		ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedString, err = token.SignedString(getJWTSigningKey())
+	return
+}
+
+func PasswordHash(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func PasswordVerify(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+func checkAdminAuth(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user := c.Get("User")
+		if user != nil {
+			//role:=user.
+			return next(c)
+		}
+		return c.JSON(http.StatusForbidden, echo.Map{"message": "invalid token"})
+	}
+}
 
 // Create a struct that will be encoded to a JWT.
 // We add jwt.StandardClaims as an embedded type, to provide fields like expiry time.
@@ -15,12 +118,6 @@ type Claims struct {
 	Name string `json:"name"`
 	jwt.StandardClaims
 }
-
-
-const (
-	accessTokenCookieName = "access-token"
-	jwtSecretKey = "some-secret-key"
-)
 
 func GetJWTSecret() string {
 	return jwtSecretKey
@@ -50,7 +147,7 @@ func generateAccessToken(user *user.User) (string, time.Time, error) {
 func generateToken(user *user.User, expirationTime time.Time, secret []byte) (string, time.Time, error) {
 	// Create the JWT claims, which includes the username and expiry time.
 	claims := &Claims{
-		Name:  user.Name,
+		Name: user.Name,
 		StandardClaims: jwt.StandardClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds.
 			ExpiresAt: expirationTime.Unix(),
