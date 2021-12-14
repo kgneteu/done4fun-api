@@ -11,38 +11,8 @@ import (
 )
 
 const (
-	accessTokenCookieName = "X-Auth"
-	jwtSecretKey          = "some-secret-key"
+	jwtSecretKey = "some-secret-key"
 )
-
-
-
-//Auth Middleware
-func checkToken(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		tokenCookie, _ := c.Cookie(accessTokenCookieName)
-		//todo support for auth headers
-		//tokenHeader.
-
-		claims := &jwt.StandardClaims{}
-		if tokenCookie != nil {
-			//token = decodeJWTToken
-			_, err := jwt.ParseWithClaims(tokenCookie.Value, claims,
-				func(token *jwt.Token) (interface{}, error) {
-					return getJWTSigningKey(), nil
-				})
-			if err != nil {
-				return c.JSON(http.StatusForbidden, echo.Map{"message": "invalid token"})
-			}
-
-			c.Set("User", map[string]interface{}{
-				"Id":    claims.Id,
-				"Token": tokenCookie.Value,
-			})
-		}
-		return next(c)
-	}
-}
 
 func getJWTSigningKey() []byte {
 	return []byte(jwtSecretKey)
@@ -52,7 +22,7 @@ func createToken(id uint) (signedString string, err error) {
 	//todo: secret for jwt & expiration
 	claims := &jwt.StandardClaims{
 		Id:        strconv.FormatUint(uint64(id), 10),
-		IssuedAt: time.Now().Unix(),
+		IssuedAt:  time.Now().Unix(),
 		NotBefore: time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 	}
@@ -70,35 +40,6 @@ func PasswordVerify(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func checkAdminAuth(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {

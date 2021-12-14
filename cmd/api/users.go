@@ -26,7 +26,7 @@ func (app *application) userLoginEndpoint(c echo.Context) error {
 		return err
 	}
 
-	if !PasswordVerify(json.Password, user.Password){
+	if !PasswordVerify(json.Password, user.Password) {
 		c.JSON(http.StatusUnauthorized, echo.Map{"message": "unauthorized"})
 		return errors.New("Bad password")
 	}
@@ -48,7 +48,7 @@ func (app *application) userLoginEndpoint(c echo.Context) error {
 	c.SetCookie(cookie)
 	return c.JSON(http.StatusOK, echo.Map{
 		"token": token,
-		"user": user,
+		"user":  user,
 	})
 }
 
@@ -91,12 +91,22 @@ func userProfileDeleteEndpoint(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"message": "deleted"})
 }
 
-func getUserListEndpoint(c echo.Context) error {
-	type PageLogin struct {
+func (app *application) getUserListEndpoint(c echo.Context) (err error) {
+	type PageInfo struct {
 		Page  int    `form:"page" json:"page" xml:"page"`
 		Limit int    `form:"limit" json:"limit" xml:"limit"`
 		Order string `form:"order" json:"order" xml:"order"`
 	}
-	c.Param("page")
-	return c.JSON(http.StatusOK, echo.Map{"message": "deleted"})
+	var json PageInfo
+	if err = c.Bind(&json); err != nil {
+		c.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
+		return
+	}
+
+	userList, err := app.models.GetUserList(json.Page, json.Limit, json.Order)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
+		return
+	}
+	return c.JSON(http.StatusOK, echo.Map{"users": userList.Users, "total": userList.Total})
 }

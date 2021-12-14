@@ -21,7 +21,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
-	models models.Database
+	models models.DBModel
 }
 
 func main() {
@@ -44,12 +44,12 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
-		models: models.Database{Db: db},
+		models: models.DBModel{Db: db},
 	}
 
 	server := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.port),
-		Handler: app.routes(),
+		Addr:         fmt.Sprintf(":%d", cfg.port),
+		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,

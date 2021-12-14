@@ -68,6 +68,15 @@ func main() {
 				return tx.Migrator().DropTable("message_statuses")
 			},
 		},
+		{
+			ID: "201608301434",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&models.Award{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Migrator().DropTable("award")
+			},
+		},
 	})
 
 	m.RollbackTo("201608301431")
@@ -93,13 +102,13 @@ func Seed(tx *gorm.DB, u *models.User) {
 		fmt.Println(user)
 	}
 	admin := models.User{}
-	admin.Email="admin@admin.com"
-	admin.FirstName="John"
-	admin.LastName="Wick"
-	admin.Verified=true
+	admin.Email = "admin@admin.com"
+	admin.FirstName = "John"
+	admin.LastName = "Wick"
+	admin.Verified = true
 	admin.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
-	admin.Role="admin"
-	res:=tx.Create(&admin)
+	admin.Role = "admin"
+	res := tx.Create(&admin)
 	if res.Error != nil {
 		log.Fatal(res.Error)
 	}
@@ -107,4 +116,5 @@ func Seed(tx *gorm.DB, u *models.User) {
 	if res.Error != nil {
 		log.Fatal(res.Error)
 	}
+	//fmt.Printf("%+v", user)
 }

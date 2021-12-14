@@ -10,6 +10,7 @@ func (app *application) routes() *echo.Echo {
 	router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: `"time":"${time_rfc3339_nano}","id":"${id}","remote_ip":"${remote_ip}", "method=${method}", "uri=${uri}", "status"="${status}"`,
 	}))
+	router.Use(middleware.CORS())
 
 	router.Use(checkToken)
 
@@ -27,7 +28,7 @@ func (app *application) routes() *echo.Echo {
 	{
 		//admin.Group()
 
-		admin.GET("/user/list",getUserListEndpoint)
+		admin.GET("/user/list", app.getUserListEndpoint)
 		admin.POST("/user/create", userProfileCreateEndpoint)
 		admin.DELETE("/user/:id", userProfileDeleteEndpoint)
 		admin.PATCH("/user/:id", userProfileUpdateEndpoint)
