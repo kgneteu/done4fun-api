@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-gormigrate/gormigrate/v2"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
+	"os"
 	"server/models"
 )
 
@@ -19,12 +21,27 @@ type config struct {
 func main() {
 	var cfg config
 
+	defEnv := os.Getenv("ENV_TYPE")
+	var err error
+	if defEnv == "" {
+		defEnv = "development"
+		err = godotenv.Load(".env.development")
+	} else {
+		err = godotenv.Load(".env")
+	}
+
+	if err != nil {
+		println(err.Error())
+	}
+
+	defDSN := os.Getenv("POSTGRES_DSN")
+
 	flag.BoolVar(&cfg.prod, "prod", false, "Populate db for production use")
 	flag.BoolVar(&cfg.dev, "dev", false, "Populate db for development use")
 	flag.Parse()
-
+	//"user=ufo password=!!!UfO:-)1234!!! dbname=done4fun port=5432 sslmode=disable TimeZone=Europe/Warsaw",
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  "user=ufo password=!!!UfO:-)1234!!! dbname=done4fun port=5432 sslmode=disable TimeZone=Europe/Warsaw",
+		DSN:                  defDSN,
 		PreferSimpleProtocol: true, // disables implicit prepared statement usage
 	}), &gorm.Config{})
 
