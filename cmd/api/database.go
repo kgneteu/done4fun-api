@@ -21,7 +21,6 @@ func OpenDB(dsn string, logger *log.Logger) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	logger.Println("Successfully connected to models")
+	logger.Println("Successfully connected to database")
 	return db, nil
 }
-

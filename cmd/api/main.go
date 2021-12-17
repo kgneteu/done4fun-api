@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"server/models"
+	"strconv"
 	"time"
 )
 
@@ -27,10 +28,13 @@ type application struct {
 func main() {
 
 	var cfg config
+	defPort, _ := strconv.Atoi(os.Getenv("SERVER_PORT"))
+	defEnv := os.Getenv("ENV_TYPE")
+	defDSN := os.Getenv("POSTGRES_DSN")
 
-	flag.IntVar(&cfg.port, "port", 9000, "Server port to listen on")
-	flag.StringVar(&cfg.env, "env", "development", "Application environment (development|production)")
-	flag.StringVar(&cfg.db.dsn, "dsn", `postgres://ufo:!!!UfO:-)1234!!!@localhost:/done4fun?sslmode=disable`, "Postgres connection string")
+	flag.IntVar(&cfg.port, "port", defPort, "Server port to listen on")
+	flag.StringVar(&cfg.env, "env", defEnv, "Application environment (development|production)")
+	flag.StringVar(&cfg.db.dsn, "dsn", defDSN, "Postgres connection string")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)

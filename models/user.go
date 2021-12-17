@@ -1,6 +1,6 @@
 package models
 
-func (db *DBModel) CreateUser(firstName, lastName, email, password string) (int64, error) {
+func (model *DBModel) CreateUser(firstName, lastName, email, password string) (int64, error) {
 	var err error
 	var id int64
 
@@ -9,25 +9,31 @@ func (db *DBModel) CreateUser(firstName, lastName, email, password string) (int6
 		VALUES ($1, $2, $3, $4)
 		RETURNING id`
 
-	err = db.Db.QueryRow(sqlStatement, firstName, lastName, email, password).Scan(&id)
+	err = model.Db.QueryRow(sqlStatement, firstName, lastName, email, password).Scan(&id)
 	if err != nil {
 		return id, err
 	}
 	return id, nil
 }
 
-func (db *DBModel) GetUserById(Id uint) (user *User, err error) {
+func (model *DBModel) GetUserById(Id uint) (user *User, err error) {
 	sqlStatement := `SELECT * FROM users WHERE ID=$1;`
 	user = &User{}
-	err = db.Db.Get(user, sqlStatement, Id)
+	err = model.Db.Get(user, sqlStatement, Id)
 	return user, err
 }
 
-func (db *DBModel) GetUserByEmail(email string) (user *User, err error) {
+func (model *DBModel) GetUserByEmail(email string) (user *User, err error) {
 	sqlStatement := `SELECT * FROM users WHERE email=$1;`
 	user = &User{}
-	err = db.Db.Get(user, sqlStatement, email)
+	err = model.Db.Get(user, sqlStatement, email)
 	return user, err
+}
+
+func (model *DBModel) DeleteUser(id uint) (err error) {
+	sqlStatement := `DELETE FROM users WHERE id=$1;`
+	_, err = model.Db.Exec(sqlStatement, &id)
+	return err
 }
 
 type UserList struct {
@@ -35,7 +41,7 @@ type UserList struct {
 	Users *[]User
 }
 
-func (db *DBModel) GetUserList(page int, limit int, order string) (userList UserList, err error) {
+func (model *DBModel) GetUserList(page int, limit int, order string) (userList UserList, err error) {
 	sqlStatement := `SELECT * FROM users ORDER BY $3 LIMIT $1 OFFSET $2 ;`
 	if limit == 0 {
 		limit = 10
@@ -46,13 +52,13 @@ func (db *DBModel) GetUserList(page int, limit int, order string) (userList User
 	if order == "" {
 		order = "'id'"
 	}
-	page = page * limit
+	offset := (page - 1) * limit
 
-	if err = db.Db.Get(&userList.Total, `SELECT COUNT(*) as total FROM users`); err != nil {
+	if err = model.Db.Get(&userList.Total, `SELECT COUNT(*) as total FROM users`); err != nil {
 		return
 	}
 
 	userList.Users = &[]User{}
-	err = db.Db.Select(userList.Users, sqlStatement, limit, page, order)
+	err = model.Db.Select(userList.Users, sqlStatement, limit, offset, order)
 	return
 }

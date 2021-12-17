@@ -71,10 +71,37 @@ func main() {
 		{
 			ID: "201608301434",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.AutoMigrate(&models.Award{})
+				return tx.AutoMigrate(&models.Prize{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Migrator().DropTable("award")
+				return tx.Migrator().DropTable("prizes")
+			},
+		},
+		{
+			ID: "201608301435",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&models.TaskCategory{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Migrator().DropTable("task_categories")
+			},
+		},
+		{
+			ID: "201608301436",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&models.Task{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Migrator().DropTable("tasks")
+			},
+		},
+		{
+			ID: "201608301437",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&models.KidPrize{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Migrator().DropTable("kid_prizes")
 			},
 		},
 	})
@@ -101,10 +128,11 @@ func Seed(tx *gorm.DB, u *models.User) {
 		users = append(users, user)
 		fmt.Println(user)
 	}
+	//admin
 	admin := models.User{}
 	admin.Email = "admin@admin.com"
 	admin.FirstName = "John"
-	admin.LastName = "Wick"
+	admin.LastName = "Admin"
 	admin.Verified = true
 	admin.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
 	admin.Role = "admin"
@@ -112,6 +140,33 @@ func Seed(tx *gorm.DB, u *models.User) {
 	if res.Error != nil {
 		log.Fatal(res.Error)
 	}
+	//parent
+	parent := models.User{}
+	parent.Email = "parent@parent.com"
+	parent.FirstName = "Adam"
+	parent.LastName = "Parent"
+	parent.Verified = true
+	parent.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
+	parent.Role = "parent"
+	res = tx.Create(&parent)
+	if res.Error != nil {
+		log.Fatal(res.Error)
+	}
+
+	//kid
+	kid := models.User{}
+	kid.Email = "kid@kid.com"
+	kid.FirstName = "Monica"
+	kid.LastName = "Clever"
+	kid.Verified = true
+	kid.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
+	kid.Role = "kid"
+	kid.ParentId = 2
+	res = tx.Create(&kid)
+	if res.Error != nil {
+		log.Fatal(res.Error)
+	}
+
 	res = tx.Create(&users)
 	if res.Error != nil {
 		log.Fatal(res.Error)

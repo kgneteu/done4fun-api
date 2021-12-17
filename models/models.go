@@ -28,6 +28,7 @@ type User struct {
 	Role      string `gorm:"default:parent" json:"role" db:"role"`
 	ParentId  int64  `gorm:"null;index" json:"parent_id" db:"parent_id" faker:"-"`
 	Verified  bool   `gorm:"default:false" json:"verified" db:"verified" faker:"-"`
+	Picture   string `gorm:"null" json:"picture" db:"picture" faker:"-"`
 	//Parent   User
 	//Messages []Message `gorm:"foreignKey:sender_id;references:id"`
 }
@@ -57,18 +58,36 @@ type Article struct {
 	Published bool `gorm:"default:false" json:"published"`
 }
 
-type Award struct {
+type Prize struct {
 	GormModel
-	OwnerId uint `gorm:"not null;index" json:"owner_id"`
-	Owner   User `gorm:"foreignKey:owner_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Points  uint `gorm:"default:1" json:"points"`
+	ParentId uint `gorm:"not null;index" json:"parent_id"`
+	//Parent   User   `gorm:"foreignKey:parent_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Points uint   `gorm:"not null;default:1" json:"points"`
+	Icon   string `gorm:"null" json:"icon" db:"icon" faker:"-"`
 }
 
-type KidAward struct {
+type KidPrize struct {
 	GormModel
 	KidId   uint  `gorm:"not null;index" json:"kid_id"`
 	Kid     User  `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	AwardId uint  `gorm:"not null;index" json:"award_id"`
-	Award   Award `gorm:"foreignKey:award_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Points  uint  `gorm:"default:1" json:"points"`
+	PrizeId uint  `gorm:"not null;index" json:"prize_id"`
+	Prize   Prize `gorm:"foreignKey:prize_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Points  uint  `gorm:"not null;default:1" json:"points"`
+}
+
+type TaskCategory struct {
+	GormModel
+	ParentId uint `gorm:"not null;index" json:"parent_id"`
+	//Parent           User   `gorm:"foreignKey:parent_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Icon             string `gorm:"null" json:"icon" db:"icon" faker:"-"`
+	NeedConfirmation bool   `gorm:"default:false" json:"need_confirmation"`
+	NeedReply        bool   `gorm:"default:false" json:"need_reply"`
+}
+
+type Task struct {
+	GormModel
+	KidId     uint   `gorm:"not null;index" json:"kid_id"`
+	Kid       User   `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Confirmed bool   `gorm:"default:false" json:"confirmed"`
+	Reply     string `gorm:"not null" json:"reply" db:"reply" faker:"-"`
 }
