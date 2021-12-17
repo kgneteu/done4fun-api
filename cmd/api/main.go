@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -28,8 +29,21 @@ type application struct {
 func main() {
 
 	var cfg config
-	defPort, _ := strconv.Atoi(os.Getenv("SERVER_PORT"))
+
 	defEnv := os.Getenv("ENV_TYPE")
+	var err error
+	if defEnv == "" {
+		defEnv = "development"
+		err = godotenv.Load(".env.development")
+	} else {
+		err = godotenv.Load(".env")
+	}
+
+	if err != nil {
+		println(err.Error())
+	}
+	defPort, _ := strconv.Atoi(os.Getenv("SERVER_PORT"))
+
 	defDSN := os.Getenv("POSTGRES_DSN")
 
 	flag.IntVar(&cfg.port, "port", defPort, "Server port to listen on")
