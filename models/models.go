@@ -21,14 +21,14 @@ type GormModel struct {
 
 type User struct {
 	GormModel
-	FirstName string `gorm:"not null" json:"first_name" db:"first_name" faker:"first_name"`
-	LastName  string `gorm:"not null" json:"last_name" db:"last_name" faker:"last_name"`
-	Email     string `gorm:"not null;unique" json:"email" db:"email" faker:"email"`
-	Password  string `gorm:"not null" json:"password" db:"password"`
-	Role      string `gorm:"default:parent" json:"role" db:"role"`
-	ParentId  int64  `gorm:"null;index" json:"parent_id" db:"parent_id" faker:"-"`
-	Verified  bool   `gorm:"default:false" json:"verified" db:"verified" faker:"-"`
-	Picture   string `gorm:"null" json:"picture" db:"picture" faker:"-"`
+	FirstName string  `gorm:"not null" json:"first_name" db:"first_name" faker:"first_name"`
+	LastName  string  `gorm:"not null" json:"last_name" db:"last_name" faker:"last_name"`
+	Email     string  `gorm:"not null;unique" json:"email" db:"email" faker:"email"`
+	Password  string  `gorm:"not null" json:"password" db:"password"`
+	Role      string  `gorm:"default:parent" json:"role" db:"role"`
+	ParentId  uint    `gorm:"null;index" json:"parent_id" db:"parent_id" faker:"-"`
+	Verified  bool    `gorm:"default:false" json:"verified" db:"verified" faker:"-"`
+	Picture   *string `gorm:"null" json:"picture" db:"picture" faker:"-"`
 	//Parent   User
 	//Messages []Message `gorm:"foreignKey:sender_id;references:id"`
 }
@@ -43,9 +43,9 @@ type Message struct {
 
 type MessageStatus struct {
 	GormModel
-	RecipientId int64   `gorm:"not null;index" json:"recipient_id"`
+	RecipientId uint    `gorm:"not null;index" json:"recipient_id"`
 	Recipient   User    `gorm:"foreignKey:recipient_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	MessageId   int64   `gorm:"not null;index" json:"message_id"`
+	MessageId   uint    `gorm:"not null;index" json:"message_id"`
 	Message     Message `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Viewed      bool    `gorm:"default:false" json:"viewed"`
 	Confirmed   bool    `gorm:"default:false" json:"confirmed"`

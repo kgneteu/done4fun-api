@@ -1,20 +1,9 @@
 package models
 
-func (model *DBModel) CreateUser(firstName, lastName, email, password string) (int64, error) {
-	var err error
-	var id int64
-
-	sqlStatement := `
-		INSERT INTO users (first_name, last_name, email, password)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id`
-
-	err = model.Db.QueryRow(sqlStatement, firstName, lastName, email, password).Scan(&id)
-	if err != nil {
-		return id, err
-	}
-	return id, nil
-}
+import (
+	"strconv"
+	"strings"
+)
 
 func (model *DBModel) GetUserById(Id uint) (user *User, err error) {
 	sqlStatement := `SELECT * FROM users WHERE ID=$1;`
@@ -60,5 +49,61 @@ func (model *DBModel) GetUserList(page int, limit int, order string) (userList U
 
 	userList.Users = &[]User{}
 	err = model.Db.Select(userList.Users, sqlStatement, limit, offset, order)
+	return
+}
+
+func (model *DBModel) CreateNewUser(firstName, lastName, email, password string) (int64, error) {
+	var err error
+	var id int64
+
+	sqlStatement := `
+		INSERT INTO users (first_name, last_name, email, password)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id`
+
+	err = model.Db.QueryRow(sqlStatement, firstName, lastName, email, password).Scan(&id)
+	if err != nil {
+		return id, err
+	}
+	return id, nil
+}
+
+func (model *DBModel) CreateUser(user map[string]string) (id int64, err error) {
+	var fields []string
+	var values []interface{}
+	var placeholders []string
+	i := 1
+	for k, v := range user {
+		fields = append(fields, k)
+		values = append(values, v)
+		placeholders = append(placeholders, "$"+strconv.Itoa(i))
+		i++
+	}
+
+	fString := strings.Join(fields, ", ")
+	pString := strings.Join(placeholders, ", ")
+	sqlStatement := `
+		INSERT INTO users (` + fString + `)
+		VALUES (` + pString + `)
+		RETURNING id`
+
+	err = model.Db.QueryRow(sqlStatement, values...).Scan(&id)
+	return
+}
+
+func (model *DBModel) UpdateUser(user map[string]string, userId uint) (err error) {
+	var fields []string
+	var values []interface{}
+	values = append(values, userId)
+	i := 2
+	for k, v := range user {
+		fields = append(fields, k+"=$"+strconv.Itoa(i))
+		values = append(values, v)
+		i++
+	}
+
+	fString := strings.Join(fields, ", ")
+	sqlStatement := `UPDATE users SET ` + fString + " WHERE id=$1"
+	_, err = model.Db.Exec(sqlStatement, values...)
 	return
 }

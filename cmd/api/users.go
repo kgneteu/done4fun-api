@@ -5,6 +5,9 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"net/http"
+	"server/models"
+	"strconv"
+	"strings"
 )
 
 func (app *application) userLoginEndpoint(c echo.Context) (err error) {
@@ -68,8 +71,8 @@ func (app *application) userRegisterEndpoint(c echo.Context) (err error) {
 	type Register struct {
 		Password  string `form:"password" json:"password" xml:"password"`
 		Email     string `form:"email" json:"email" xml:"email"`
-		FirstName string `form:"firstname" json:"firstname" xml:"firstname"`
-		LastName  string `form:"lastname" json:"lastname" xml:"lastname"`
+		FirstName string `form:"first_name" json:"first_name" xml:"first_name"`
+		LastName  string `form:"last_name" json:"last_name" xml:"last_name"`
 	}
 
 	var json Register
@@ -78,7 +81,18 @@ func (app *application) userRegisterEndpoint(c echo.Context) (err error) {
 		return
 	}
 
-	_, err = app.models.CreateUser(json.FirstName, json.LastName, json.Email, json.Password)
+	if strings.Trim(json.FirstName, "") == "" || strings.Trim(json.LastName, "") == "" || strings.Trim(json.Password, "") == "" || strings.Trim(json.Email, "") == "" {
+		_ = BadRequest(c)
+		return errors.New("missing required fields")
+	}
+
+	json.Password, err = PasswordHash(json.Password)
+	if err != nil {
+		_ = InternalError(c)
+		return
+	}
+
+	_, err = app.models.CreateNewUser(json.FirstName, json.LastName, json.Email, json.Password)
 	if err != nil {
 		if pqErr := err.(*pq.Error); pqErr.Code == "23505" {
 			_ = Forbidden(c, "duplicated")
@@ -91,19 +105,140 @@ func (app *application) userRegisterEndpoint(c echo.Context) (err error) {
 }
 
 // ADMIN ZONE
-func (app *application) userProfileCreateEndpoint(c echo.Context) error {
-	return c.JSON(http.StatusOK, echo.Map{"message": "created"})
+func (app *application) userCreateEndpoint(c echo.Context) (err error) {
+	if c.Get("UserInfo") == nil {
+		_ = Unauthorized(c)
+		return errors.New("bad user")
+	}
+	var userInfo *models.User
+	userInfo = c.Get("UserInfo").(*models.User)
+	if userInfo == nil {
+		_ = Forbidden(c)
+		return errors.New("need user")
+	}
+	if !(userInfo.Role == "admin" || userInfo.Role == "parent") {
+		_ = Forbidden(c)
+		return errors.New("invalid user")
+	}
+
+	fields := map[string]string{}
+	if err = c.Bind(&fields); err != nil {
+		_ = BadRequest(c)
+		return err
+	}
+
+	requiredFields := []string{"email", "password", "first_name", "last_name"}
+	for _, field := range requiredFields {
+		f := fields[field]
+		if strings.Trim(f, "") == "" {
+			_ = BadRequest(c)
+			return errors.New("missing required fields")
+		}
+	}
+
+	fields["password"], err = PasswordHash(fields["password"])
+	if err != nil {
+		_ = InternalError(c)
+		return
+	}
+
+	if userInfo.Role == "parent" {
+		fields["parent_id"] = strconv.FormatInt(int64(userInfo.ID), 10)
+	}
+
+	_, err = app.models.CreateUser(fields)
+	if err != nil {
+		if pqErr := err.(*pq.Error); pqErr.Code == "23505" {
+			_ = Forbidden(c, "duplicated")
+		} else {
+			_ = Forbidden(c, err.Error())
+		}
+		return
+	}
+	return OK(c, "account created")
 }
 
-func (app *application) userProfileUpdateEndpoint(c echo.Context) error {
-	return c.JSON(http.StatusOK, echo.Map{"message": "updated"})
+func (app *application) userUpdateEndpoint(c echo.Context) (err error) {
+	var userInfo *models.User
+	var targetId uint
+
+	if c.Get("UserInfo") == nil {
+		_ = Unauthorized(c)
+		return errors.New("bad user")
+	}
+
+	userInfo = c.Get("UserInfo").(*models.User)
+	if userInfo == nil {
+		_ = Forbidden(c)
+		return errors.New("need user")
+	}
+
+	fields := map[string]string{}
+	if err = c.Bind(&fields); err != nil {
+		_ = BadRequest(c)
+		return err
+	}
+
+	userId := c.Param("id")
+	if targetId, err = toUint(userId); err != nil {
+		_ = BadRequest(c, "invalid id")
+		return
+	}
+
+	if !(userInfo.Role == "admin" || userInfo.Role == "parent") {
+		if targetId != userInfo.ID {
+			_ = Forbidden(c)
+			return errors.New("invalid target")
+		}
+	}
+
+	if userInfo.Role == "parent" && targetId != userInfo.ID {
+		var subUser *models.User
+		subUser, err = app.models.GetUserById(targetId)
+		if err != nil {
+			_ = BadRequest(c, "invalid id")
+			return
+		}
+		if subUser.ParentId != userInfo.ID {
+			_ = Forbidden(c)
+			return errors.New("invalid target")
+		}
+	}
+
+	if _, ok := fields["password"]; ok {
+		if userInfo.ID == targetId {
+			oldPassword := fields["old_password"]
+			if !PasswordVerify(oldPassword, userInfo.Password) {
+				_ = Unauthorized(c)
+				return errors.New("bad password")
+			}
+		}
+
+		fields["password"], err = PasswordHash(fields["password"])
+		if err != nil {
+			_ = InternalError(c)
+			return
+		}
+		delete(fields, "old_password")
+	}
+
+	err = app.models.UpdateUser(fields, targetId)
+	if err != nil {
+		if pqErr := err.(*pq.Error); pqErr.Code == "23505" {
+			_ = Forbidden(c, "duplicated")
+		} else {
+			_ = Forbidden(c, err.Error())
+		}
+		return
+	}
+	return OK(c, "changed")
 }
 
 func (app *application) userDeleteEndpoint(c echo.Context) (err error) {
 	userId := c.Param("id")
 	var id uint
 	if id, err = toUint(userId); err != nil {
-		_ = BadRequest(c, err.Error())
+		_ = BadRequest(c, "invalid id")
 		return
 	}
 	if err = app.models.DeleteUser(id); err != nil {
