@@ -36,6 +36,7 @@ func (app *application) routes() *echo.Echo {
 	{
 		auth.PATCH("/user/:id", app.userUpdateEndpoint)
 		auth.POST("/user/create", app.userCreateEndpoint)
+		admin.GET("/user/children/list", app.getSubUserListEndpoint)
 	}
 
 	return router

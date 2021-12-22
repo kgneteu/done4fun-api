@@ -144,6 +144,7 @@ func (app *application) userCreateEndpoint(c echo.Context) (err error) {
 
 	if userInfo.Role == "parent" {
 		fields["parent_id"] = strconv.FormatInt(int64(userInfo.ID), 10)
+		fields["role"] = "kid"
 	}
 
 	_, err = app.models.CreateUser(fields)
@@ -193,6 +194,7 @@ func (app *application) userUpdateEndpoint(c echo.Context) (err error) {
 	}
 
 	if userInfo.Role == "parent" && targetId != userInfo.ID {
+		fields["role"] = "kid"
 		var subUser *models.User
 		subUser, err = app.models.GetUserById(targetId)
 		if err != nil {
@@ -261,6 +263,26 @@ func (app *application) getUserListEndpoint(c echo.Context) (err error) {
 	}
 
 	userList, err := app.models.GetUserList(json.Page, json.Limit, json.Order)
+	if err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+	return c.JSON(http.StatusOK, echo.Map{"users": userList.Users, "total": userList.Total})
+}
+
+func (app *application) getSubUserListEndpoint(c echo.Context) (err error) {
+	type PageInfo struct {
+		Page  int    `form:"page" json:"page" xml:"page"`
+		Limit int    `form:"limit" json:"limit" xml:"limit"`
+		Order string `form:"order" json:"order" xml:"order"`
+	}
+	var json PageInfo
+	if err = c.Bind(&json); err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+
+	userList, err := app.models.GetSubUserList(json.Page, json.Limit, json.Order, 2)
 	if err != nil {
 		_ = BadRequest(c, err.Error())
 		return

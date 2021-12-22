@@ -52,6 +52,28 @@ func (model *DBModel) GetUserList(page int, limit int, order string) (userList U
 	return
 }
 
+func (model *DBModel) GetSubUserList(page int, limit int, order string, parentId uint) (userList UserList, err error) {
+	sqlStatement := `SELECT * FROM users WHERE parent_id=$4 ORDER BY $3 LIMIT $1 OFFSET $2 ;`
+	if limit == 0 {
+		limit = 10
+	}
+	if page < 0 {
+		page = 0
+	}
+	if order == "" {
+		order = "'id'"
+	}
+	offset := (page - 1) * limit
+
+	if err = model.Db.Get(&userList.Total, `SELECT COUNT(*) as total FROM users WHERE parent_id=$1`, parentId); err != nil {
+		return
+	}
+
+	userList.Users = &[]User{}
+	err = model.Db.Select(userList.Users, sqlStatement, limit, offset, order, parentId)
+	return
+}
+
 func (model *DBModel) CreateNewUser(firstName, lastName, email, password string) (int64, error) {
 	var err error
 	var id int64
