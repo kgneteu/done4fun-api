@@ -29,8 +29,51 @@ type User struct {
 	ParentId  uint    `gorm:"null;index" json:"parent_id" db:"parent_id" faker:"-"`
 	Verified  bool    `gorm:"default:false" json:"verified" db:"verified" faker:"-"`
 	Picture   *string `gorm:"null" json:"picture" db:"picture" faker:"-"`
+	Points    uint    `gorm:"default:0" json:"points" db:"points" faker:"-"`
 	//Parent   User
 	//Messages []Message `gorm:"foreignKey:sender_id;references:id"`
+}
+
+type Task struct {
+	GormModel
+	KidId        uint      `gorm:"not null;index" json:"kid_id"`
+	Kid          User      `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Action       string    `gorm:"not null" json:"icon" db:"icon" faker:"-"`
+	Icon         uint      `gorm:"default:1" json:"icon"`
+	StartAt      time.Time `json:"start_at" db:"start_at" faker:"-"`
+	Cyclic       uint      `gorm:"default:0" json:"cyclic"`
+	SelectedDays uint      `gorm:"default:0" json:"selected_days"`
+	Negligible   bool      `gorm:"default:false" json:"negligible"`
+	Deferrable   bool      `gorm:"default:false" json:"deferrable"`
+	MaxDelay     uint      `gorm:"default:0" json:"max_delay"`
+	Completed    bool      `gorm:"default:false" json:"completed"`
+}
+
+type TaskStatus struct {
+	GormModel
+	TaskId      uint      `gorm:"not null;index" json:"task_id"`
+	Task        Task      `gorm:"foreignKey:task_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Reply       string    `gorm:"null" json:"reply" db:"reply" faker:"-"`
+	CompletedAt time.Time `json:"start_at" db:"start_at" faker:"-"`
+}
+
+type Prize struct {
+	GormModel
+	KidId  uint   `gorm:"not null;index" json:"kid_id"`
+	Kid    User   `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Name   string `gorm:"not null" json:"name" db:"name" faker:"-"`
+	Points uint   `gorm:"not null;default:1" json:"points"`
+	Icon   uint   `gorm:"default:1" json:"icon"`
+}
+
+type KidPrize struct {
+	GormModel
+	KidId     uint      `gorm:"not null;index" json:"kid_id"`
+	Kid       User      `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	PrizeId   uint      `gorm:"not null;index" json:"prize_id"`
+	Prize     Prize     `gorm:"foreignKey:prize_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	ChosenAt  time.Time `json:"chosen_at" db:"chosen_at" faker:"-"`
+	Collected bool      `gorm:"default:false" json:"collected"`
 }
 
 type Message struct {
@@ -56,38 +99,4 @@ type Article struct {
 	AuthorId  uint `gorm:"not null;index" json:"author_id"`
 	Author    User `gorm:"foreignKey:author_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Published bool `gorm:"default:false" json:"published"`
-}
-
-type Prize struct {
-	GormModel
-	ParentId uint `gorm:"not null;index" json:"parent_id"`
-	//Parent   User   `gorm:"foreignKey:parent_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Points uint   `gorm:"not null;default:1" json:"points"`
-	Icon   string `gorm:"null" json:"icon" db:"icon" faker:"-"`
-}
-
-type KidPrize struct {
-	GormModel
-	KidId   uint  `gorm:"not null;index" json:"kid_id"`
-	Kid     User  `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	PrizeId uint  `gorm:"not null;index" json:"prize_id"`
-	Prize   Prize `gorm:"foreignKey:prize_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Points  uint  `gorm:"not null;default:1" json:"points"`
-}
-
-type TaskCategory struct {
-	GormModel
-	ParentId uint `gorm:"not null;index" json:"parent_id"`
-	//Parent           User   `gorm:"foreignKey:parent_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Icon             string `gorm:"null" json:"icon" db:"icon" faker:"-"`
-	NeedConfirmation bool   `gorm:"default:false" json:"need_confirmation"`
-	NeedReply        bool   `gorm:"default:false" json:"need_reply"`
-}
-
-type Task struct {
-	GormModel
-	KidId     uint   `gorm:"not null;index" json:"kid_id"`
-	Kid       User   `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Confirmed bool   `gorm:"default:false" json:"confirmed"`
-	Reply     string `gorm:"not null" json:"reply" db:"reply" faker:"-"`
 }

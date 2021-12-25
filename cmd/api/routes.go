@@ -34,9 +34,11 @@ func (app *application) routes() *echo.Echo {
 
 	auth := router.Group("/api/auth", app.authenticated)
 	{
+		auth.GET("/user/children/list", app.getSubUserListEndpoint)
+		auth.GET("/user/search", app.searchUserEndpoint)
 		auth.PATCH("/user/:id", app.userUpdateEndpoint)
 		auth.POST("/user/create", app.userCreateEndpoint)
-		admin.GET("/user/children/list", app.getSubUserListEndpoint)
+
 	}
 
 	return router

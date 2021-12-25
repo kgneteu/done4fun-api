@@ -37,7 +37,6 @@ func main() {
 	flag.BoolVar(&cfg.prod, "prod", false, "Populate db for production use")
 	flag.BoolVar(&cfg.dev, "dev", false, "Populate db for development use")
 	flag.Parse()
-	//"user=ufo password=!!!UfO:-)1234!!! dbname=done4fun port=5432 sslmode=disable TimeZone=Europe/Warsaw",
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  defDSN,
 		PreferSimpleProtocol: true, // disables implicit prepared statement usage
@@ -50,8 +49,6 @@ func main() {
 	//db.LogMode(true)
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
-		// create persons table
-		// add pets table
 		{
 			ID: "201608301431",
 			Migrate: func(tx *gorm.DB) error {
@@ -91,10 +88,10 @@ func main() {
 		{
 			ID: "201608301435",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.AutoMigrate(&models.TaskCategory{})
+				return tx.AutoMigrate(&models.TaskStatus{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Migrator().DropTable("task_categories")
+				return tx.Migrator().DropTable("task_statuses")
 			},
 		},
 		{
@@ -117,8 +114,8 @@ func main() {
 		},
 	})
 
-	m.RollbackTo("201608301431")
-	m.RollbackLast()
+	_ = m.RollbackTo("201608301431")
+	_ = m.RollbackLast()
 	if err = m.Migrate(); err != nil {
 		log.Fatalf("Could not migrate: %v", err)
 	}

@@ -39,19 +39,6 @@ func (app *application) userLoginEndpoint(c echo.Context) (err error) {
 		_ = InternalError(c)
 		return
 	}
-	//
-	//cookie := new(http.Cookie)
-	//cookie.Name = accessTokenCookieName
-	//cookie.Value = token
-	//cookie.HttpOnly = true
-	//cookie.SameSite = 4
-	////cookie.Secure = false
-	////cookie.MaxAge = 1000000000
-	////cookie.Domain = ""
-	//cookie.Path = "/"
-	//cookie.Expires = time.Now().Add(24 * time.Hour)
-	//
-	//c.SetCookie(cookie)
 
 	filteredUser := map[string]interface{}{
 		"id":         user.ID,
@@ -250,6 +237,7 @@ func (app *application) userDeleteEndpoint(c echo.Context) (err error) {
 	return OK(c, "deleted")
 }
 
+//todo filter data
 func (app *application) getUserListEndpoint(c echo.Context) (err error) {
 	type PageInfo struct {
 		Page  int    `form:"page" json:"page" xml:"page"`
@@ -270,6 +258,7 @@ func (app *application) getUserListEndpoint(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, echo.Map{"users": userList.Users, "total": userList.Total})
 }
 
+//todo filter data
 func (app *application) getSubUserListEndpoint(c echo.Context) (err error) {
 	type PageInfo struct {
 		Page  int    `form:"page" json:"page" xml:"page"`
@@ -282,7 +271,63 @@ func (app *application) getSubUserListEndpoint(c echo.Context) (err error) {
 		return
 	}
 
-	userList, err := app.models.GetSubUserList(json.Page, json.Limit, json.Order, 2)
+	if c.Get("UserInfo") == nil {
+		_ = Unauthorized(c)
+		return errors.New("bad user")
+	}
+
+	var userInfo *models.User
+	userInfo = c.Get("UserInfo").(*models.User)
+	if userInfo == nil {
+		_ = Forbidden(c)
+		return errors.New("need user")
+	}
+
+	userList, err := app.models.GetSubUserList(json.Page, json.Limit, json.Order, userInfo.ID)
+	if err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+	return c.JSON(http.StatusOK, echo.Map{"users": userList.Users, "total": userList.Total})
+}
+
+func (app *application) searchUserEndpoint(c echo.Context) (err error) {
+	type PageInfo struct {
+		Limit  int    `form:"limit" json:"limit" xml:"limit"`
+		Order  string `form:"order" json:"order" xml:"order"`
+		Role   string `form:"role" json:"role" xml:"role"`
+		Filter string `form:"filter" json:"filter" xml:"filter"`
+	}
+
+	var json PageInfo
+	if err = c.Bind(&json); err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+
+	if c.Get("UserInfo") == nil {
+		_ = Unauthorized(c)
+		return errors.New("bad user")
+	}
+
+	var userInfo *models.User
+	userInfo = c.Get("UserInfo").(*models.User)
+	if userInfo == nil {
+		_ = Forbidden(c)
+		return errors.New("need user")
+	}
+
+	if userInfo.Role == "kid" {
+		_ = Forbidden(c)
+		return errors.New("forbidden")
+	}
+
+	var parentId uint
+	if userInfo.Role == "parent" {
+		parentId = userInfo.ID
+	}
+
+	userList, err := app.models.SearchUser(json.Limit, json.Order, json.Filter, json.Role, parentId)
 	if err != nil {
 		_ = BadRequest(c, err.Error())
 		return
