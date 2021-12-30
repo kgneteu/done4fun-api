@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+//todo secret key .env
 const (
 	jwtSecretKey = "some-secret-key"
 )
@@ -16,13 +17,37 @@ func getJWTSigningKey() []byte {
 }
 
 func createToken(id uint) (signedString string, err error) {
-	//todo: secret for jwt & expiration
+	//todo: secret for jwt & expiration .env
 	claims := &jwt.StandardClaims{
 		Id:        strconv.FormatUint(uint64(id), 10),
 		IssuedAt:  time.Now().Unix(),
 		NotBefore: time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Minute * 180).Unix(),
 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedString, err = token.SignedString(getJWTSigningKey())
+	return
+}
+
+func createRefreshToken(id uint, email string, password string) (signedString string, err error) {
+
+	type RefreshClaims struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		jwt.StandardClaims
+	}
+
+	claims := RefreshClaims{
+		email,
+		password,
+		jwt.StandardClaims{
+			Id:        strconv.FormatUint(uint64(id), 10),
+			IssuedAt:  time.Now().Unix(),
+			NotBefore: time.Now().Unix(),
+			//ExpiresAt: time.Now().Add(time.Hour * 180).Unix(), never expires
+		},
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedString, err = token.SignedString(getJWTSigningKey())
 	return

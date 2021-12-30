@@ -1,14 +1,57 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"net/http"
 	"server/models"
 	"strconv"
 	"strings"
+	"time"
 )
+
+func (app *application) authenticatedUser(c echo.Context, email string, password string) (err error) {
+	var user *models.User
+	user, err = app.models.GetUserByEmail(email)
+	if err != nil {
+		_ = Unauthorized(c)
+		return
+	}
+
+	if !PasswordVerify(password, user.Password) {
+		_ = Unauthorized(c)
+		return errors.New("bad password")
+	}
+
+	var token string
+	token, err = createToken(user.ID)
+	if err != nil {
+		_ = InternalError(c)
+		return
+	}
+
+	var refreshToken string
+	refreshToken, err = createRefreshToken(user.ID, email, password)
+	if err != nil {
+		_ = InternalError(c)
+		return
+	}
+
+	var filteredUser echo.Map
+	if filteredUser, err = app.filterUserData(user); err != nil {
+		_ = InternalError(c)
+		return err
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"token":         token,
+		"refresh_token": refreshToken,
+		"user":          filteredUser,
+	})
+}
 
 func (app *application) userLoginEndpoint(c echo.Context) (err error) {
 	type Credentials struct {
@@ -21,39 +64,44 @@ func (app *application) userLoginEndpoint(c echo.Context) (err error) {
 		_ = BadRequest(c, err.Error())
 		return
 	}
-
-	user, err := app.models.GetUserByEmail(json.Email)
-	if err != nil {
-		_ = Unauthorized(c)
-		return
-	}
-
-	if !PasswordVerify(json.Password, user.Password) {
-		_ = Unauthorized(c)
-		return errors.New("bad password")
-	}
-
-	var token string
-	token, err = createToken(user.ID)
-	if err != nil {
-		_ = InternalError(c)
-		return
-	}
-
-	filteredUser := map[string]interface{}{
-		"id":         user.ID,
-		"role":       user.Role,
-		"first_name": user.FirstName,
-		"last_name":  user.LastName,
-		"email":      user.Email,
-		"parent_id":  user.ParentId,
-	}
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": token,
-		"user":  filteredUser,
-	})
+	return app.authenticatedUser(c, json.Email, json.Password)
 }
 
+func (app *application) userRefreshTokenEndpoint(c echo.Context) (err error) {
+	type RefreshToken struct {
+		Token string `form:"token" json:"token" xml:"token"`
+	}
+
+	type RefreshClaims struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		jwt.StandardClaims
+	}
+
+	var json RefreshToken
+	if err = c.Bind(&json); err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+
+	claims := &RefreshClaims{}
+	_, err = jwt.ParseWithClaims(json.Token, claims,
+		func(token *jwt.Token) (interface{}, error) {
+			return getJWTSigningKey(), nil
+		})
+	if err != nil {
+		if claims.ExpiresAt < time.Now().Unix() {
+			_ = Unauthorized(c, "expired")
+		} else {
+			_ = Unauthorized(c, "invalid token")
+		}
+		return
+	}
+
+	return app.authenticatedUser(c, claims.Email, claims.Password)
+}
+
+//todo database timestamps verified
 func (app *application) userRegisterEndpoint(c echo.Context) (err error) {
 	type Register struct {
 		Password  string `form:"password" json:"password" xml:"password"`
@@ -92,6 +140,7 @@ func (app *application) userRegisterEndpoint(c echo.Context) (err error) {
 }
 
 // ADMIN ZONE
+//todo database timestamps verified
 func (app *application) userCreateEndpoint(c echo.Context) (err error) {
 	if c.Get("UserInfo") == nil {
 		_ = Unauthorized(c)
@@ -146,6 +195,7 @@ func (app *application) userCreateEndpoint(c echo.Context) (err error) {
 	return OK(c, "account created")
 }
 
+//todo database timestamps verified
 func (app *application) userUpdateEndpoint(c echo.Context) (err error) {
 	var userInfo *models.User
 	var targetId uint
@@ -188,7 +238,7 @@ func (app *application) userUpdateEndpoint(c echo.Context) (err error) {
 			_ = BadRequest(c, "invalid id")
 			return
 		}
-		if subUser.ParentId != userInfo.ID {
+		if *subUser.ParentId != userInfo.ID {
 			_ = Forbidden(c)
 			return errors.New("invalid target")
 		}
@@ -221,6 +271,74 @@ func (app *application) userUpdateEndpoint(c echo.Context) (err error) {
 		return
 	}
 	return OK(c, "changed")
+}
+
+func (app *application) userGetEndpoint(c echo.Context) (err error) {
+	var userInfo *models.User
+	var targetId uint
+
+	if c.Get("UserInfo") == nil {
+		_ = Unauthorized(c)
+		return errors.New("bad user")
+	}
+
+	userInfo = c.Get("UserInfo").(*models.User)
+	if userInfo == nil {
+		_ = Forbidden(c)
+		return errors.New("need user")
+	}
+
+	userId := c.Param("id")
+	if targetId, err = toUint(userId); err != nil {
+		_ = BadRequest(c, "invalid id")
+		return
+	}
+
+	if !(userInfo.Role == "admin" || userInfo.Role == "parent") {
+		if targetId != userInfo.ID {
+			_ = Forbidden(c)
+			return errors.New("invalid target")
+		}
+	}
+
+	targetUser := userInfo
+	if targetId != userInfo.ID {
+		targetUser, err = app.models.GetUserById(targetId)
+		if err != nil {
+			_ = BadRequest(c, "invalid id")
+			return
+		}
+		if userInfo.Role == "parent" && *targetUser.ParentId != userInfo.ID {
+			_ = Forbidden(c)
+			return errors.New("invalid target")
+		}
+	}
+
+	var filteredUser echo.Map
+	if filteredUser, err = app.filterUserData(targetUser); err != nil {
+		_ = InternalError(c)
+		return err
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"user": filteredUser,
+	})
+}
+
+func (app *application) filterUserData(user *models.User) (map[string]interface{}, error) {
+	var data = make(map[string]interface{})
+	b, err := json.Marshal(user)
+	if err != nil {
+		return data, err
+	}
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return data, err
+	}
+	delete(data, "created_at")
+	delete(data, "deleted_at")
+	delete(data, "updated_at")
+	delete(data, "password")
+	return data, nil
 }
 
 func (app *application) userDeleteEndpoint(c echo.Context) (err error) {
