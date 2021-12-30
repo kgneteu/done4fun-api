@@ -22,7 +22,7 @@ func createToken(id uint) (signedString string, err error) {
 		Id:        strconv.FormatUint(uint64(id), 10),
 		IssuedAt:  time.Now().Unix(),
 		NotBefore: time.Now().Unix(),
-		ExpiresAt: time.Now().Add(time.Minute * 180).Unix(),
+		ExpiresAt: time.Now().Add(time.Minute*1 + 1).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedString, err = token.SignedString(getJWTSigningKey())
