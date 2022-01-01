@@ -6,6 +6,13 @@ import (
 	"strconv"
 )
 
+const TargetUserInfo = "TargetUserInfo"
+const UserInfo = "UserInfo"
+
+const AdminRole = "parent"
+const ParentRole = "parent"
+const KidRole = "kid"
+
 func Forbidden(c echo.Context, msg ...string) error {
 	message := "forbidden"
 	if len(msg) != 0 {

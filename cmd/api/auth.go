@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+	"server/models"
 	"strconv"
 	"time"
 )
@@ -22,7 +24,7 @@ func createToken(id uint) (signedString string, err error) {
 		Id:        strconv.FormatUint(uint64(id), 10),
 		IssuedAt:  time.Now().Unix(),
 		NotBefore: time.Now().Unix(),
-		ExpiresAt: time.Now().Add(time.Minute*1 + 1).Unix(),
+		ExpiresAt: time.Now().Add(time.Minute*180 + 1).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedString, err = token.SignedString(getJWTSigningKey())
@@ -61,6 +63,28 @@ func PasswordHash(password string) (string, error) {
 func PasswordVerify(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func (app *application) CheckOwnerAccess(user *models.User, ownerId uint) error {
+	if user != nil {
+		if user.Role == "admin" {
+			return nil
+		}
+		if user.Role == "kid" {
+			if user.ID == ownerId {
+				return nil
+			}
+		} else {
+			kid, err := app.models.GetUserById(ownerId)
+			if err != nil {
+				return err
+			}
+			if kid.ParentId != nil && *kid.ParentId == user.ID {
+				return nil
+			}
+		}
+	}
+	return errors.New("access forbidden")
 }
 
 // Create a struct that will be encoded to a JWT.

@@ -20,12 +20,6 @@ func (model *DBModel) GetUserByEmail(email string) (user *User, err error) {
 	return user, err
 }
 
-func (model *DBModel) DeleteUser(id uint) (err error) {
-	sqlStatement := `DELETE FROM users WHERE id=$1;`
-	_, err = model.Db.Exec(sqlStatement, &id)
-	return err
-}
-
 type UserList struct {
 	Total uint
 	Users *[]User
@@ -155,7 +149,13 @@ func (model *DBModel) CreateNewUser(firstName, lastName, email, password string)
 	return id, nil
 }
 
-func (model *DBModel) CreateUser(user map[string]string) (id int64, err error) {
+func (model *DBModel) DeleteUser(id uint) (err error) {
+	sqlStatement := `DELETE FROM users WHERE id=$1;`
+	_, err = model.Db.Exec(sqlStatement, &id)
+	return err
+}
+
+func (model *DBModel) CreateUser(user map[string]string) (id uint, err error) {
 	var fields []string
 	var values []interface{}
 	var placeholders []string
@@ -190,7 +190,7 @@ func (model *DBModel) UpdateUser(user map[string]string, userId uint) (err error
 	}
 
 	fString := strings.Join(fields, ", ")
-	sqlStatement := `UPDATE users SET ` + fString + " WHERE id=$1"
+	sqlStatement := `UPDATE users SET ` + fString + ", updated_at=NOW() WHERE id=$1"
 	_, err = model.Db.Exec(sqlStatement, values...)
 	return
 }

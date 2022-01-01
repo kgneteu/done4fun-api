@@ -22,33 +22,45 @@ func (app *application) routes() *echo.Echo {
 
 	users := router.Group("api/user")
 	{
-		users.POST("/login", app.userLoginEndpoint)
-		users.POST("/register", app.userRegisterEndpoint)
-		users.POST("/refresh", app.userRefreshTokenEndpoint)
+		users.POST("/login", app.userLoginEndpoint)          //todo refactor
+		users.POST("/register", app.userRegisterEndpoint)    //todo refactor
+		users.POST("/refresh", app.userRefreshTokenEndpoint) //todo refactor
 	}
 
 	admin := router.Group("/api/admin", app.authenticated, app.adminAuth)
 	{
-		admin.GET("/user/list", app.getUserListEndpoint)
-		admin.DELETE("/user/:id", app.userDeleteEndpoint)
+		admin.GET("/user/list", app.getUserListEndpoint) //todo refactor
 	}
 
 	auth := router.Group("/api/auth/user", app.authenticated)
 	{
-		auth.GET("/children/list", app.getSubUserListEndpoint)
-		auth.GET("/search", app.searchUserEndpoint)
-		auth.GET("/:id", app.userGetEndpoint)
-		auth.PATCH("/:id", app.userUpdateEndpoint)
-		auth.POST("/create", app.userCreateEndpoint)
+		auth.GET("/:id", app.getUserEndpoint, app.ownerAuth)
+		auth.DELETE("/:id", app.deleteUserEndpoint, app.ownerAuth)
+		auth.PATCH("/:id", app.updateUserEndpoint, app.ownerAuth)
+		auth.POST("/create", app.createUserEndpoint)
+
 		auth.GET("/:id/prizes/available", app.getAvailablePrizesEndpoint, app.ownerAuth)
-		//auth.POST("/:id/prize/:prizeId", app.addPrizeEndpoint)
+
+		auth.GET("/children/list", app.getSubUserListEndpoint) //todo refactor
+		auth.GET("/search", app.searchUserEndpoint)            //todo refactor
+
+		auth.POST("/:id/task/create", app.createTaskEndpoint, app.ownerAuth)
+		auth.POST("/:id/prize/create", app.createPrizeEndpoint, app.ownerAuth)
 	}
-	//
-	//prize := router.Group("/api/auth/prize", app.authenticated)
-	//{
-	//	//prize.DELETE("/:prizeId", app.deletePrizeEndpoint)
-	//	//prize.PATCH("/:prizeId", app.updatePrizeEndpoint)
-	//}
+
+	prize := router.Group("/api/auth/prize", app.authenticated)
+	{
+		prize.GET("/:prizeId", app.getPrizeEndpoint)
+		prize.DELETE("/:prizeId", app.deletePrizeEndpoint)
+		prize.PATCH("/:prizeId", app.updatePrizeEndpoint, app.ownerAuth)
+	}
+
+	task := router.Group("/api/auth/task", app.authenticated)
+	{
+		task.GET("/:taskId", app.getTaskEndpoint)
+		task.DELETE("/:taskId", app.deleteTaskEndpoint)
+		task.PATCH("/:taskId", app.updateTaskEndpoint)
+	}
 
 	return router
 }
