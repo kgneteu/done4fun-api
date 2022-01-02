@@ -59,11 +59,13 @@ type TaskStatus struct {
 
 type Prize struct {
 	GormModel
-	KidId  uint   `gorm:"not null;index" json:"kid_id" db:"kid_id" faker:"-"`
-	Kid    User   `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-" faker:"-"`
-	Name   string `gorm:"not null" json:"name" db:"name" faker:"sentence, len=25"`
-	Points uint   `gorm:"not null;default:1" json:"points" db:"points" faker:"boundary_start=1, boundary_end=1000"`
-	Icon   uint   `gorm:"default:1" json:"icon" db:"icon" faker:"boundary_start=1, boundary_end=64"`
+	KidId     uint   `gorm:"not null;index" json:"kid_id" db:"kid_id" faker:"-"`
+	Kid       User   `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-" faker:"-"`
+	Name      string `gorm:"not null" json:"name" db:"name" faker:"sentence, len=25"`
+	Points    uint   `gorm:"not null;default:1" json:"points" db:"points" faker:"boundary_start=1, boundary_end=1000"`
+	Icon      uint   `gorm:"default:1" json:"icon" db:"icon" faker:"boundary_start=1, boundary_end=64"`
+	OneTime   bool   `gorm:"default:false" json:"one_time" db:"one_time" faker:"-"`
+	Published bool   `gorm:"default:true" json:"published" db:"published" faker:"-"`
 }
 
 type KidPrize struct {

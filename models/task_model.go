@@ -6,7 +6,7 @@ import (
 )
 
 func (model *DBModel) GetTask(taskId uint) (task *Task, err error) {
-	sqlStatement := `SELECT FROM tasks WHERE id=$1;`
+	sqlStatement := `SELECT * FROM tasks WHERE id=$1;`
 	task = &Task{}
 	err = model.Db.Get(task, sqlStatement, taskId)
 	return task, err
@@ -14,7 +14,7 @@ func (model *DBModel) GetTask(taskId uint) (task *Task, err error) {
 
 func (model *DBModel) DeleteTask(taskId uint) (err error) {
 	sqlStatement := `DELETE FROM tasks WHERE id=$1;`
-	_, err = model.Db.Exec(sqlStatement, &taskId)
+	_, err = model.Db.Exec(sqlStatement, taskId)
 	return err
 }
 

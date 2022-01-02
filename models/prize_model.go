@@ -13,7 +13,7 @@ func (model *DBModel) GetAvailablePrizes(userId uint) (prizes *[]Prize, err erro
 }
 
 func (model *DBModel) GetPrize(prizeId uint) (prize *Prize, err error) {
-	sqlStatement := `SELECT FROM tasks WHERE id=$1;`
+	sqlStatement := `SELECT * FROM prizes WHERE id=$1;`
 	prize = &Prize{}
 	err = model.Db.Get(prize, sqlStatement, prizeId)
 	return prize, err
@@ -21,7 +21,7 @@ func (model *DBModel) GetPrize(prizeId uint) (prize *Prize, err error) {
 
 func (model *DBModel) DeletePrize(prizeId uint) (err error) {
 	sqlStatement := `DELETE FROM prizes WHERE id=$1;`
-	_, err = model.Db.Exec(sqlStatement, &prizeId)
+	_, err = model.Db.Exec(sqlStatement, prizeId)
 	return err
 }
 

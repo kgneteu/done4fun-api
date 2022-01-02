@@ -8,6 +8,21 @@ import (
 	"server/models"
 )
 
+func ProdSeed(tx *gorm.DB, u *models.User) {
+	admin := models.User{}
+	admin.Email = "admin@admin.com"
+	admin.FirstName = "John"
+	admin.LastName = "Admin"
+	admin.Verified = true
+	admin.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
+	admin.Role = "admin"
+	//admin.Parent = models.User{}
+	res := tx.Create(&admin)
+	if res.Error != nil {
+		log.Fatal(res.Error)
+	}
+}
+
 func Seed(tx *gorm.DB, u *models.User) {
 	//admin ID=1
 	admin := models.User{}
@@ -43,7 +58,8 @@ func Seed(tx *gorm.DB, u *models.User) {
 	kid.Verified = true
 	kid.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
 	kid.Role = "kid"
-	kid.ParentId = 2
+	var pid uint = 2
+	kid.ParentId = &pid
 	res = tx.Create(&kid)
 	if res.Error != nil {
 		log.Fatal(res.Error)
@@ -77,7 +93,7 @@ func Seed(tx *gorm.DB, u *models.User) {
 
 	//Kids of parent 4 (ID=6-505) & parents ID: 506-1005
 	var users []models.User
-
+	pid = 4
 	for i := 0; i < 1000; i++ {
 		user := models.User{}
 		err := faker.FakeData(&user)
@@ -87,7 +103,8 @@ func Seed(tx *gorm.DB, u *models.User) {
 		user.Password = "$2a$10$pYs2rPQYL7vrYVB/i07WfuHVrGVdEbllPLZAr7IUUWzOqKgOnpvmu"
 		if i < 500 {
 			user.Role = "kid"
-			user.ParentId = 4
+
+			user.ParentId = &pid
 		} else {
 			user.Role = "parent"
 		}

@@ -121,6 +121,8 @@ func main() {
 	}
 	if cfg.dev {
 		Seed(db, &models.User{})
+	} else {
+		ProdSeed(db, &models.User{})
 	}
 	log.Printf("Migration did run successfully")
 }
