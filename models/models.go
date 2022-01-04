@@ -36,25 +36,30 @@ type User struct {
 
 type Task struct {
 	GormModel
-	KidId        uint      `gorm:"not null;index" json:"kid_id" faker:"-"`
-	Kid          User      `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Action       string    `gorm:"not null" json:"icon" db:"icon" faker:"-"`
-	Icon         uint      `gorm:"default:1" json:"icon" faker:"boundary_start=1, boundary_end=64"`
-	StartAt      time.Time `json:"start_at" db:"start_at" faker:"-"`
-	Cyclic       uint      `gorm:"default:0" json:"cyclic" faker:"-"`
-	SelectedDays uint      `gorm:"default:0" json:"selected_days"`
-	Negligible   bool      `gorm:"default:false" json:"negligible" faker:"-"`
-	Deferrable   bool      `gorm:"default:false" json:"deferrable" faker:"-"`
-	MaxDelay     uint      `gorm:"default:0" json:"max_delay" faker:"-"`
-	Completed    bool      `gorm:"default:false" json:"completed" faker:"-"`
+	KidId        uint         `gorm:"not null;index" json:"kid_id" db:"kid_id" faker:"-"`
+	Kid          User         `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Action       string       `gorm:"not null" json:"icon" db:"icon" faker:"-"`
+	Icon         uint         `gorm:"default:1" json:"icon" db:"icon" faker:"boundary_start=1, boundary_end=64"`
+	StartAt      time.Time    `json:"start_at" db:"start_at" faker:"-"`
+	EndAt        sql.NullTime `json:"end_at" db:"end_at" faker:"-"`
+	Cyclic       bool         `gorm:"default:false" json:"cyclic" db:"cyclic" faker:"-"`
+	CycleType    uint         `gorm:"default:0" json:"cycle_type" db:"cycle_type" faker:"-"`
+	SelectedDays uint         `gorm:"default:0" json:"selected_days" db:"selected_days" faker:"-"`
+	Negligible   bool         `gorm:"default:false" json:"negligible" db:"negligible" faker:"-"`
+
+	Deferrable bool `gorm:"default:false" json:"deferrable" db:"deferrable"faker:"-"`
+	MaxDelay   uint `gorm:"default:0" json:"max_delay" db:"max_delay" faker:"-"`
+	Completed  bool `gorm:"default:false" json:"completed" db:"completed" faker:"-"`
 }
 
 type TaskStatus struct {
 	GormModel
-	TaskId      uint      `gorm:"not null;index" json:"task_id"`
+	KidId       uint      `gorm:"not null;index" json:"kid_id" db:"kid_id" faker:"-"`
+	Kid         User      `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	TaskId      uint      `gorm:"not null;index" json:"task_id" db:"task_id" faker:"-"`
 	Task        Task      `gorm:"foreignKey:task_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Reply       string    `gorm:"null" json:"reply" db:"reply" faker:"-"`
-	CompletedAt time.Time `json:"start_at" db:"start_at" faker:"-"`
+	CompletedAt time.Time `json:"completed_at" db:"completed_at" faker:"-"`
 }
 
 type Prize struct {
@@ -68,14 +73,16 @@ type Prize struct {
 	Published bool   `gorm:"default:true" json:"published" db:"published" faker:"-"`
 }
 
-type KidPrize struct {
+type PrizeStatus struct {
 	GormModel
-	KidId     uint      `gorm:"not null;index" json:"kid_id"`
-	Kid       User      `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	PrizeId   uint      `gorm:"not null;index" json:"prize_id"`
-	Prize     Prize     `gorm:"foreignKey:prize_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	ChosenAt  time.Time `json:"chosen_at" db:"chosen_at" faker:"-"`
-	Collected bool      `gorm:"default:false" json:"collected"`
+	KidId       uint         `gorm:"not null;index" json:"kid_id" db:"kid_id" faker:"-"`
+	Kid         User         `gorm:"foreignKey:kid_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	PrizeId     uint         `gorm:"not null;index" json:"prize_id" db:"prize_id" faker:"-"`
+	Prize       Prize        `gorm:"foreignKey:prize_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Chosen      bool         `gorm:"default:false" json:"chosen" db:"chosen" faker:"-"`
+	ChosenAt    sql.NullTime `json:"chosen_at" db:"chosen_at" faker:"-"`
+	Collected   bool         `gorm:"default:false" json:"collected" faker:"-"`
+	CollectedAt sql.NullTime `json:"collected_at" db:"collected_at" faker:"-"`
 }
 
 type Message struct {
@@ -96,9 +103,9 @@ type MessageStatus struct {
 	Confirmed   bool    `gorm:"default:false" json:"confirmed"`
 }
 
-type Article struct {
-	GormModel
-	AuthorId  uint `gorm:"not null;index" json:"author_id"`
-	Author    User `gorm:"foreignKey:author_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
-	Published bool `gorm:"default:false" json:"published"`
-}
+//type Article struct {
+//	GormModel
+//	AuthorId  uint `gorm:"not null;index" json:"author_id"`
+//	Author    User `gorm:"foreignKey:author_id;references:id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+//	Published bool `gorm:"default:false" json:"published"`
+//}

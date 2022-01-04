@@ -106,10 +106,10 @@ func main() {
 		{
 			ID: "201608301437",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.AutoMigrate(&models.KidPrize{})
+				return tx.AutoMigrate(&models.PrizeStatus{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Migrator().DropTable("kid_prizes")
+				return tx.Migrator().DropTable("prize_statuses")
 			},
 		},
 	})
