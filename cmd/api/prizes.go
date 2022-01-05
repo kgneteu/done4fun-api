@@ -8,18 +8,6 @@ import (
 	"strconv"
 )
 
-//middleware protected
-func (app *application) getAvailablePrizesEndpoint(c echo.Context) (err error) {
-	targetUser := c.Get(TargetUserInfo).(*models.User)
-	var prizes *[]models.Prize
-	prizes, err = app.models.GetAvailablePrizes(targetUser.ID)
-	if err != nil {
-		_ = InternalError(c, err.Error())
-		return
-	}
-	return c.JSON(http.StatusOK, echo.Map{"prizes": prizes})
-}
-
 func (app *application) getPrizeEndpoint(c echo.Context) (err error) {
 	var prizeId uint
 	if prizeId, err = toUint(c.Param("prizeId")); err != nil {
@@ -77,8 +65,10 @@ func (app *application) updatePrizeEndpoint(c echo.Context) (err error) {
 		_ = BadRequest(c, "invalid prize id")
 		return
 	}
+	b := c.Request().Body
+	println(b)
 
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	if err = c.Bind(&fields); err != nil {
 		_ = BadRequest(c)
 		return
@@ -114,7 +104,7 @@ func (app *application) updatePrizeEndpoint(c echo.Context) (err error) {
 func (app *application) createPrizeEndpoint(c echo.Context) (err error) {
 	targetUser := c.Get(TargetUserInfo).(*models.User)
 
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	if err = c.Bind(&fields); err != nil {
 		_ = BadRequest(c)
 		return
@@ -140,4 +130,24 @@ func (app *application) createPrizeEndpoint(c echo.Context) (err error) {
 		return
 	}
 	return c.JSON(http.StatusOK, echo.Map{"message": "created", "id": id})
+}
+
+//middleware protected
+func (app *application) getAvailablePrizesEndpoint(c echo.Context) (err error) {
+	var pageInfo PageInfo
+	if err = c.Bind(&pageInfo); err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+
+	targetUser := c.Get(TargetUserInfo).(*models.User)
+	var prizeList models.PrizeList
+	prizeList, err = app.models.GetAvailablePrizes(targetUser.ID, pageInfo.Page, pageInfo.Limit, pageInfo.Order)
+	if err != nil {
+		_ = InternalError(c, err.Error())
+		return
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"prizes": prizeList.Prizes, "total": prizeList.Total})
+	//return c.JSON(http.StatusOK, echo.Map{"prizes": prizes})
 }

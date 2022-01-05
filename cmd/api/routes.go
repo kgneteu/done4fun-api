@@ -52,7 +52,7 @@ func (app *application) routes() *echo.Echo {
 	{
 		prize.GET("/:prizeId", app.getPrizeEndpoint)
 		prize.DELETE("/:prizeId", app.deletePrizeEndpoint)
-		prize.PATCH("/:prizeId", app.updatePrizeEndpoint, app.ownerAuth)
+		prize.PATCH("/:prizeId", app.updatePrizeEndpoint)
 	}
 
 	task := router.Group("/api/auth/task", app.authenticated)

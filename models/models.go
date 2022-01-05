@@ -14,8 +14,8 @@ type DBModel struct {
 
 type GormModel struct {
 	ID        uint         `gorm:"primarykey" json:"id" db:"id" faker:"-"`
-	CreatedAt time.Time    `json:"created_at" db:"created_at" faker:"-"`
-	UpdatedAt time.Time    `json:"updated_at" db:"updated_at" faker:"-"`
+	CreatedAt time.Time    `gorm:"not null;default:current_timestamp" json:"created_at" db:"created_at" faker:"-"`
+	UpdatedAt time.Time    `gorm:"not null;default:current_timestamp" json:"updated_at" db:"updated_at" faker:"-"`
 	DeletedAt sql.NullTime `gorm:"index" json:"deleted_at" db:"deleted_at" faker:"-"`
 }
 

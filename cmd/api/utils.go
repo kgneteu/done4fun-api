@@ -13,6 +13,13 @@ const AdminRole = "parent"
 const ParentRole = "parent"
 const KidRole = "kid"
 
+// PageInfo limit = 0 => unlimited
+type PageInfo struct {
+	Page  int    `form:"page" json:"page" xml:"page"`
+	Limit int    `form:"limit" json:"limit" xml:"limit"`
+	Order string `form:"order" json:"order" xml:"order"`
+}
+
 func Forbidden(c echo.Context, msg ...string) error {
 	message := "forbidden"
 	if len(msg) != 0 {

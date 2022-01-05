@@ -179,11 +179,6 @@ func (app *application) getUserListEndpoint(c echo.Context) (err error) {
 
 //todo filter data
 func (app *application) getSubUserListEndpoint(c echo.Context) (err error) {
-	type PageInfo struct {
-		Page  int    `form:"page" json:"page" xml:"page"`
-		Limit int    `form:"limit" json:"limit" xml:"limit"`
-		Order string `form:"order" json:"order" xml:"order"`
-	}
 	var jsonPageInfo PageInfo
 	if err = c.Bind(&jsonPageInfo); err != nil {
 		_ = BadRequest(c, err.Error())
