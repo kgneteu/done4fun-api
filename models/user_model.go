@@ -155,7 +155,7 @@ func (model *DBModel) DeleteUser(id uint) (err error) {
 	return err
 }
 
-func (model *DBModel) CreateUser(user map[string]string) (id uint, err error) {
+func (model *DBModel) CreateUser(user map[string]interface{}) (id uint, err error) {
 	var fields []string
 	var values []interface{}
 	var placeholders []string
@@ -178,7 +178,7 @@ func (model *DBModel) CreateUser(user map[string]string) (id uint, err error) {
 	return
 }
 
-func (model *DBModel) UpdateUser(user map[string]string, userId uint) (err error) {
+func (model *DBModel) UpdateUser(user map[string]interface{}, userId uint) (err error) {
 	var fields []string
 	var values []interface{}
 	values = append(values, userId)

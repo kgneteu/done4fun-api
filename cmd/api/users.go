@@ -261,7 +261,7 @@ func (app *application) createUserEndpoint(c echo.Context) (err error) {
 		return errors.New("invalid user")
 	}
 
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	if err = c.Bind(&fields); err != nil {
 		_ = BadRequest(c)
 		return err
@@ -275,7 +275,7 @@ func (app *application) createUserEndpoint(c echo.Context) (err error) {
 		}
 	}
 
-	fields["password"], err = PasswordHash(fields["password"])
+	fields["password"], err = PasswordHash(fields["password"].(string))
 	if err != nil {
 		_ = InternalError(c)
 		return
@@ -305,7 +305,7 @@ func (app *application) updateUserEndpoint(c echo.Context) (err error) {
 	user := c.Get(UserInfo).(*models.User)
 	targetUser := c.Get(TargetUserInfo).(*models.User)
 
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	if err = c.Bind(&fields); err != nil {
 		_ = BadRequest(c)
 		return err
@@ -314,18 +314,24 @@ func (app *application) updateUserEndpoint(c echo.Context) (err error) {
 	//role can't be changed
 	if _, ok := fields["role"]; ok {
 		_ = BadRequest(c, "invalid id")
+		return errors.New("admins only")
 	}
 
 	if _, ok := fields["password"]; ok {
 		if user.ID == targetUser.ID {
-			oldPassword := fields["old_password"]
-			if !PasswordVerify(oldPassword, targetUser.Password) {
+			if _, ok = fields["old_password"]; ok {
+				oldPassword := fields["old_password"].(string)
+				if !PasswordVerify(oldPassword, targetUser.Password) {
+					_ = Unauthorized(c)
+					return errors.New("bad password")
+				}
+			} else {
 				_ = Unauthorized(c)
-				return errors.New("bad password")
+				return errors.New("old password required")
 			}
 		}
 
-		fields["password"], err = PasswordHash(fields["password"])
+		fields["password"], err = PasswordHash(fields["password"].(string))
 		if err != nil {
 			_ = InternalError(c)
 			return

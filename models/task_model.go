@@ -56,3 +56,37 @@ func (model *DBModel) UpdateTask(task map[string]string, taskId uint) (err error
 	_, err = model.Db.Exec(sqlStatement, values...)
 	return
 }
+
+type TaskList struct {
+	Total int
+	Tasks *[]Task
+}
+
+func (model *DBModel) GetAvailableTasks(userId uint, page int, limit int, order string) (taskList TaskList, err error) {
+	if page < 1 {
+		page = 1
+	}
+	if order == "" {
+		order = "'id'"
+	}
+	if limit < 0 {
+		limit = 0
+	}
+	offset := (page - 1) * limit
+	taskList.Tasks = &[]Task{}
+
+	if limit > 0 {
+		sqlStatement := `SELECT * FROM tasks WHERE kid_id=$1 AND published=true ORDER BY $4 OFFSET $2 LIMIT $3`
+		err = model.Db.Select(taskList.Tasks, sqlStatement, userId, offset, limit, order)
+		if err = model.Db.Get(&taskList.Total, `SELECT COUNT(*) as total FROM tasks WHERE kid_id=$1 and published=true`, userId); err != nil {
+			return
+		}
+	} else {
+		sqlStatement := `SELECT * FROM tasks WHERE kid_id=$1 AND published=true ORDER BY $3 OFFSET $2`
+		if err = model.Db.Select(taskList.Tasks, sqlStatement, userId, offset, order); err != nil {
+			taskList.Total = len(*taskList.Tasks)
+		}
+	}
+
+	return
+}

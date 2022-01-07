@@ -130,3 +130,24 @@ func (app *application) createTaskEndpoint(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, echo.Map{"message": "created", "id": id})
 
 }
+
+//middleware protected
+func (app *application) getAvailableTasksEndpoint(c echo.Context) (err error) {
+	var pageInfo PageInfo
+	if err = c.Bind(&pageInfo); err != nil {
+		_ = BadRequest(c, err.Error())
+		return
+	}
+
+	targetUser := c.Get(TargetUserInfo).(*models.User)
+	var taskList models.TaskList
+	taskList, err = app.models.GetAvailableTasks(targetUser.ID, pageInfo.Page, pageInfo.Limit, pageInfo.Order)
+	if err != nil {
+		_ = InternalError(c, err.Error())
+		return
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"tasks": taskList.Tasks, "total": taskList.Total})
+	//return c.JSON(http.StatusOK, echo.Map{"prizes": prizes})
+}
+

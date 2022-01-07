@@ -40,6 +40,7 @@ func (app *application) routes() *echo.Echo {
 		auth.POST("/create", app.createUserEndpoint)
 
 		auth.GET("/:id/prizes/available", app.getAvailablePrizesEndpoint, app.ownerAuth)
+		auth.GET("/:id/tasks/available", app.getAvailableTasksEndpoint, app.ownerAuth)
 
 		auth.GET("/children/list", app.getSubUserListEndpoint) //todo refactor
 		auth.GET("/search", app.searchUserEndpoint)            //todo refactor
