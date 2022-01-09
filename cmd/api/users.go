@@ -169,7 +169,8 @@ func (app *application) getUserListEndpoint(c echo.Context) (err error) {
 		return
 	}
 
-	userList, err := app.models.GetUserList(jsonPageInfo.Page, jsonPageInfo.Limit, jsonPageInfo.Order)
+	var userList models.UserList
+	userList, err = app.models.GetUserList(jsonPageInfo.Page, jsonPageInfo.Limit, jsonPageInfo.Order)
 	if err != nil {
 		_ = BadRequest(c, err.Error())
 		return
@@ -197,7 +198,8 @@ func (app *application) getSubUserListEndpoint(c echo.Context) (err error) {
 		return errors.New("need user")
 	}
 
-	userList, err := app.models.GetSubUserList(jsonPageInfo.Page, jsonPageInfo.Limit, jsonPageInfo.Order, userInfo.ID)
+	var userList models.UserList
+	userList, err = app.models.GetSubUserList(jsonPageInfo.Page, jsonPageInfo.Limit, jsonPageInfo.Order, userInfo.ID)
 	if err != nil {
 		_ = BadRequest(c, err.Error())
 		return
@@ -273,6 +275,12 @@ func (app *application) createUserEndpoint(c echo.Context) (err error) {
 			_ = BadRequest(c)
 			return errors.New("missing required field: " + field)
 		}
+	}
+
+	//todo what if not string (Postman)
+	if len(fields["password"].(string)) < 6 {
+		_ = BadRequest(c)
+		return errors.New("password is too short")
 	}
 
 	fields["password"], err = PasswordHash(fields["password"].(string))
@@ -369,6 +377,12 @@ func (app *application) getUserEndpoint(c echo.Context) (err error) {
 
 func (app *application) deleteUserEndpoint(c echo.Context) (err error) {
 	targetUser := c.Get(TargetUserInfo).(*models.User)
+	currentUser := c.Get(UserInfo).(*models.User)
+	if targetUser.ID == currentUser.ID {
+		_ = Forbidden(c)
+		return errors.New("self deletion not allowed")
+	}
+
 	if err = app.models.DeleteUser(targetUser.ID); err != nil {
 		_ = InternalError(c, err.Error())
 		return

@@ -5,7 +5,9 @@ import (
 	"github.com/bxcodec/faker/v3"
 	"gorm.io/gorm"
 	"log"
+	"math/rand"
 	"server/models"
+	"time"
 )
 
 func ProdSeed(tx *gorm.DB, u *models.User) {
@@ -139,13 +141,19 @@ func Seed(tx *gorm.DB, u *models.User) {
 	var tasks []models.Task
 
 	for i := 6; i < 26; i++ {
-		for k := 0; k < 40; k++ {
+		for k := 0; k < 80; k++ {
 			task := models.Task{}
 			err := faker.FakeData(&task)
 			if err != nil {
 				fmt.Println(err)
 			}
 			task.KidId = uint(i)
+
+			d := rand.Int63n(40) - 15
+			t := time.Now().Add(time.Hour * 24 * time.Duration(d))
+			h := rand.Int63n(5) + 15
+			nd := time.Date(t.Year(), t.Month(), t.Day(), int(h), 0, 0, 0, time.UTC)
+			task.StartAt = nd
 			tasks = append(tasks, task)
 			fmt.Println(task)
 		}

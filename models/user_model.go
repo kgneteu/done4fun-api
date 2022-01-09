@@ -35,7 +35,7 @@ func (model *DBModel) GetUserList(page int, limit int, order string) (userList U
 		page = 1
 	}
 	if order == "" {
-		order = "'id'"
+		order = "first_name, last_name"
 	}
 	offset := (page - 1) * limit
 
@@ -50,15 +50,16 @@ func (model *DBModel) GetUserList(page int, limit int, order string) (userList U
 
 func (model *DBModel) GetSubUserList(page int, limit int, order string, parentId uint) (userList UserList, err error) {
 	const fields = "id, first_name, last_name, email, role, picture, verified"
-	sqlStatement := `SELECT ` + fields + ` FROM users WHERE parent_id=$4 ORDER BY $3 LIMIT $1 OFFSET $2 ;`
+	sqlStatement := `SELECT ` + fields + ` FROM users WHERE parent_id=$4 ORDER BY $3 DESC LIMIT $1 OFFSET $2 ;`
 	if limit == 0 {
 		limit = 10
 	}
+
 	if page < 1 {
 		page = 1
 	}
 	if order == "" {
-		order = "'id'"
+		order = "first_name, last_name"
 	}
 	offset := (page - 1) * limit
 

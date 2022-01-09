@@ -18,7 +18,7 @@ func (model *DBModel) DeleteTask(taskId uint) (err error) {
 	return err
 }
 
-func (model *DBModel) CreateTask(task map[string]string) (id uint, err error) {
+func (model *DBModel) CreateTask(task map[string]interface{}) (id uint, err error) {
 	var fields []string
 	var values []interface{}
 	var placeholders []string
@@ -40,7 +40,7 @@ func (model *DBModel) CreateTask(task map[string]string) (id uint, err error) {
 	return
 }
 
-func (model *DBModel) UpdateTask(task map[string]string, taskId uint) (err error) {
+func (model *DBModel) UpdateTask(task map[string]interface{}, taskId uint) (err error) {
 	var fields []string
 	var values []interface{}
 	values = append(values, taskId)

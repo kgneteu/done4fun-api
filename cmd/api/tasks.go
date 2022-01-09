@@ -72,7 +72,7 @@ func (app *application) updateTaskEndpoint(c echo.Context) (err error) {
 		return
 	}
 
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	if err = c.Bind(&fields); err != nil {
 		_ = BadRequest(c)
 		return
@@ -102,7 +102,7 @@ func (app *application) updateTaskEndpoint(c echo.Context) (err error) {
 func (app *application) createTaskEndpoint(c echo.Context) (err error) {
 	targetUser := c.Get(TargetUserInfo).(*models.User)
 
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	if err = c.Bind(&fields); err != nil {
 		_ = BadRequest(c)
 		return
@@ -150,4 +150,3 @@ func (app *application) getAvailableTasksEndpoint(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, echo.Map{"tasks": taskList.Tasks, "total": taskList.Total})
 	//return c.JSON(http.StatusOK, echo.Map{"prizes": prizes})
 }
-
