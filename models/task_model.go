@@ -3,6 +3,7 @@ package models
 import (
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (model *DBModel) GetTask(taskId uint) (task *Task, err error) {
@@ -62,7 +63,7 @@ type TaskList struct {
 	Tasks *[]Task
 }
 
-func (model *DBModel) GetAvailableTasks(userId uint, page int, limit int, order string) (taskList TaskList, err error) {
+func (model *DBModel) GetAvailableTasks(userId uint, page int, limit int, order string, dateFrom time.Time, dateTo time.Time) (taskList TaskList, err error) {
 	if page < 1 {
 		page = 1
 	}
@@ -76,14 +77,14 @@ func (model *DBModel) GetAvailableTasks(userId uint, page int, limit int, order 
 	taskList.Tasks = &[]Task{}
 
 	if limit > 0 {
-		sqlStatement := `SELECT * FROM tasks WHERE kid_id=$1 AND published=true ORDER BY $4 OFFSET $2 LIMIT $3`
+		sqlStatement := `SELECT * FROM tasks WHERE (kid_id=$1) AND (published=true) ORDER BY $4 OFFSET $2 LIMIT $3`
 		err = model.Db.Select(taskList.Tasks, sqlStatement, userId, offset, limit, order)
 		if err = model.Db.Get(&taskList.Total, `SELECT COUNT(*) as total FROM tasks WHERE kid_id=$1 and published=true`, userId); err != nil {
 			return
 		}
 	} else {
-		sqlStatement := `SELECT * FROM tasks WHERE kid_id=$1 AND published=true ORDER BY $3 OFFSET $2`
-		if err = model.Db.Select(taskList.Tasks, sqlStatement, userId, offset, order); err != nil {
+		sqlStatement := `SELECT * FROM tasks WHERE (kid_id=$1) AND (published=true) AND (cycle_type >0 OR (start_at>=$4 AND start_at<=$5)) ORDER BY $3 OFFSET $2`
+		if err = model.Db.Select(taskList.Tasks, sqlStatement, userId, offset, order, dateFrom, dateTo); err != nil {
 			taskList.Total = len(*taskList.Tasks)
 		}
 	}

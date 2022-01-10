@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"server/models"
 	"strconv"
+	"time"
 )
 
 func (app *application) getTaskEndpoint(c echo.Context) (err error) {
@@ -133,20 +134,63 @@ func (app *application) createTaskEndpoint(c echo.Context) (err error) {
 
 //middleware protected
 func (app *application) getAvailableTasksEndpoint(c echo.Context) (err error) {
+
+	ds := c.QueryParam("date")
+	df := c.QueryParam("date_from")
+	dt := c.QueryParam("date_to")
+
+	//todo query instead of bind
 	var pageInfo PageInfo
 	if err = c.Bind(&pageInfo); err != nil {
 		_ = BadRequest(c, err.Error())
 		return
 	}
 
+	var dateFrom time.Time
+	var dateTo time.Time
+
+	if ds != "" {
+		dateFrom, err = time.Parse(time.RFC3339, ds)
+		if err != nil {
+			_ = BadRequest(c, err.Error())
+			return
+		}
+		y, m, d := dateFrom.Date()
+		dateFrom = time.Date(y, m, d, 0, 0, 0, 0, dateFrom.Location())
+		dateTo = dateFrom.Add(time.Hour * 24)
+	} else if df != "" {
+		dateFrom, err = time.Parse(time.RFC3339, df)
+		if err != nil {
+			_ = BadRequest(c, err.Error())
+			return
+		}
+		dateTo, err = time.Parse(time.RFC3339, dt)
+		if err != nil {
+			_ = BadRequest(c, err.Error())
+			return
+		}
+		y, m, d := dateFrom.Date()
+		dateFrom = time.Date(y, m, d, 0, 0, 0, 0, dateFrom.Location())
+		y, m, d = dateTo.Date()
+		dateTo = time.Date(y, m, d, 0, 0, 0, 0, dateFrom.Location()).Add(time.Hour * 24)
+		if dateFrom.After(dateTo) {
+			err = errors.New("wrong date range")
+			_ = BadRequest(c, err.Error())
+			return
+		}
+	} else {
+		y, m, d := time.Now().Date()
+		dateFrom = time.Date(y, m, d, 0, 0, 0, 0, time.Local)
+		dateTo = dateFrom.Add(time.Hour * 24)
+	}
+
 	targetUser := c.Get(TargetUserInfo).(*models.User)
 	var taskList models.TaskList
-	taskList, err = app.models.GetAvailableTasks(targetUser.ID, pageInfo.Page, pageInfo.Limit, pageInfo.Order)
+	taskList, err = app.models.GetAvailableTasks(targetUser.ID, pageInfo.Page, pageInfo.Limit, pageInfo.Order, dateFrom, dateTo)
 	if err != nil {
 		_ = InternalError(c, err.Error())
 		return
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"tasks": taskList.Tasks, "total": taskList.Total})
-	//return c.JSON(http.StatusOK, echo.Map{"prizes": prizes})
 }
